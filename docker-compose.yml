@@ -1,18 +1,17 @@
 version: "3.9"
 services:
-  php-apache:
-    build:
-      context: ./php
-      dockerfile: Dockerfile
-    depends_on:
-      - db
+  web:
+    build: ./httpd
+    environment:
+      APACHE_RUN_USER: '#1000'
     volumes:
-      - ./php/src:/var/www/html/
+      - ${VOLUME_WORKDIR}:/var/www:cached
+      - ./httpd/vhosts:/usr/local/apache2/vhosts
     ports:
-      - 8000:80
-  db:
-    container_name: db
-    image: mysql
+      - 80:80
+    working_dir: /var/www
+  database:
+    image: mysql:8.0
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: MYSQL_ROOT_PASSWORD
@@ -20,9 +19,16 @@ services:
       MYSQL_USER: MYSQL_USER
       MYSQL_PASSWORD: MYSQL_PASSWORD
     ports:
-      - "3306:3306"
+      - 3306:3306
   database-adminer:
     image: adminer
     restart: always
     ports:
       - 6080:8080
+  php:
+    build: ./php
+    working_dir: /var/www
+    volumes:
+      - ${VOLUME_WORKDIR}:/var/www:cached
+    depends_on:
+      - database
